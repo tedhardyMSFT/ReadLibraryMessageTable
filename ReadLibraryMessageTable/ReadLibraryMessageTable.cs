@@ -17,13 +17,13 @@
         public static extern IntPtr LoadResource(IntPtr hModule, IntPtr hResInfo);
 
         [DllImport("kernel32.dll", SetLastError = true)]
-        public static extern IntPtr LockResource(IntPtr hResData);
+        static extern IntPtr LockResource(IntPtr hResData);
 
         [DllImport("kernel32.dll", SetLastError = true)]
-        public static extern IntPtr GetProcessHeap();
+        static extern IntPtr GetProcessHeap();
 
         [DllImport("kernel32.dll", SetLastError = true)]
-        public static extern int HeapFree(IntPtr hHeap, int dwFlags, IntPtr lpMem);
+        static extern int HeapFree(IntPtr hHeap, int dwFlags, IntPtr lpMem);
 
         /// <summary>
         /// Frees the loaded dynamic-link library (DLL) module and, if necessary, decrements its reference count. 
@@ -32,7 +32,7 @@
         /// <param name="hModule">A handle to the loaded library module</param>
         /// <returns></returns>
         [DllImport("kernel32.dll", SetLastError = true)]
-        public static extern uint FreeLibrary(IntPtr hModule);
+        static extern uint FreeLibrary(IntPtr hModule);
 
         [DllImport("kernel32.dll", SetLastError = true)]
         static extern int FormatMessage(
@@ -140,6 +140,7 @@
 
         public static Dictionary<string, string> EnumerateMessageTable(string ModulePath)
         {
+            int LastError = -1;
             Dictionary<string, string> Messages = new Dictionary<string, string>();
 
             // steps overview:
@@ -152,9 +153,10 @@
 
             // Loads the specified module into the address space of the calling process. The specified module may cause other modules to be loaded.
             IntPtr hModule = LoadLibrary(ModulePath);
+            LastError = Marshal.GetLastWin32Error();
             if (hModule == IntPtr.Zero)
             {
-                int LastError = Marshal.GetLastWin32Error();
+                 
                 Console.WriteLine("Error loading library. Error code returned:{0}", LastError);
                 return Messages;
             }
@@ -175,9 +177,10 @@
             // Note  LockResource does not actually lock memory; it is just used to obtain a pointer to the memory containing the resource data.
             //      The name of the function comes from versions prior to Windows XP, when it was used to lock a global memory block allocated by LoadResource.
             IntPtr memTable = LockResource(msgTable);
+            LastError = Marshal.GetLastWin32Error();
             if (memTable == IntPtr.Zero)
             {
-                int LastError = Marshal.GetLastWin32Error();
+                
                 Console.WriteLine("Error locking message table in memory. Error code returned:{0}", LastError);
                 return null;
             }
@@ -187,9 +190,9 @@
             // this code just reads the number of blocks, skips over the int (4 bytes) and starts processing each block.
 
             int numberOfBlocks = Marshal.ReadInt32(memTable);
+            LastError = Marshal.GetLastWin32Error();
             if (numberOfBlocks == 0)
             {
-                int LastError = Marshal.GetLastWin32Error();
                 Console.WriteLine("Zero entries found in message table. Error code returned:{0}", LastError);
                 return null;
             }
