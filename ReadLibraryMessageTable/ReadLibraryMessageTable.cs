@@ -7,57 +7,8 @@
 
     public class ReadMessageTable
     {
-        [DllImport("kernel32.dll", SetLastError = true)]
-        static extern IntPtr LoadLibrary(string fileName);
 
-        [DllImport("kernel32.dll", SetLastError = true)]
-        static extern IntPtr FindResource(IntPtr hModule, int lpID, int lpType);
 
-        [DllImport("kernel32.dll", SetLastError = true)]
-        public static extern IntPtr LoadResource(IntPtr hModule, IntPtr hResInfo);
-
-        [DllImport("kernel32.dll", SetLastError = true)]
-        static extern IntPtr LockResource(IntPtr hResData);
-
-        [DllImport("kernel32.dll", SetLastError = true)]
-        static extern IntPtr GetProcessHeap();
-
-        [DllImport("kernel32.dll", SetLastError = true)]
-        static extern int HeapFree(IntPtr hHeap, int dwFlags, IntPtr lpMem);
-
-        /// <summary>
-        /// Frees the loaded dynamic-link library (DLL) module and, if necessary, decrements its reference count. 
-        /// When the reference count reaches zero, the module is unloaded from the address space of the calling process and the handle is no longer valid.
-        /// </summary>
-        /// <param name="hModule">A handle to the loaded library module</param>
-        /// <returns></returns>
-        [DllImport("kernel32.dll", SetLastError = true)]
-        static extern uint FreeLibrary(IntPtr hModule);
-
-        [DllImport("kernel32.dll", SetLastError = true)]
-        static extern int FormatMessage(
-            FormatMessageFlags dwFlags, 
-            IntPtr lpSource, 
-            uint dwMessageId, 
-            uint dwLanguageId, 
-            ref IntPtr lpBuffer, 
-            uint nSize, 
-            IntPtr Arguments);
-
-        /// <summary>
-        /// For FormatMessage, the flag for retreiving a message by lookup.
-        /// see: https://msdn.microsoft.com/en-us/library/windows/desktop/ms679351(v=vs.85).aspx
-        /// </summary>
-        [Flags]
-        private enum FormatMessageFlags : uint
-        {
-            FORMAT_MESSAGE_ALLOCATE_BUFFER = 0x00000100,
-            FORMAT_MESSAGE_IGNORE_INSERTS = 0x00000200,
-            FORMAT_MESSAGE_FROM_SYSTEM = 0x00001000,
-            FORMAT_MESSAGE_ARGUMENT_ARRAY = 0x00002000,
-            FORMAT_MESSAGE_FROM_HMODULE = 0x00000800,
-            FORMAT_MESSAGE_FROM_STRING = 0x00000400,
-        }
 
         /// <summary>
         /// Resource type for Message Table
@@ -117,7 +68,7 @@
         /// <summary>
         /// used for HeapFree. Handle to the default process heap.
         /// </summary>
-        private IntPtr hDefaultProcessHeap = GetProcessHeap();
+        private IntPtr hDefaultProcessHeap = NativeMethods.GetProcessHeap();
 
         /// <summary>
         /// Instantiates a new instance of blah blah 
@@ -126,7 +77,7 @@
         /// <param name="ModulePath"></param>
         public ReadMessageTable(string ModulePath)
         {
-            IntPtr hModule = LoadLibrary(ModulePath);
+            IntPtr hModule = NativeMethods.LoadLibrary(ModulePath);
             if (hModule == IntPtr.Zero)
             {
                 int LastError = Marshal.GetLastWin32Error();
@@ -152,7 +103,7 @@
             // 6) for each block, read the 
 
             // Loads the specified module into the address space of the calling process. The specified module may cause other modules to be loaded.
-            IntPtr hModule = LoadLibrary(ModulePath);
+            IntPtr hModule = NativeMethods.LoadLibrary(ModulePath);
             LastError = Marshal.GetLastWin32Error();
             if (hModule == IntPtr.Zero)
             {
@@ -176,7 +127,7 @@
             // Do not try to lock a resource by using the handle returned by the FindResource or FindResourceEx function.Such a handle points to random data.
             // Note  LockResource does not actually lock memory; it is just used to obtain a pointer to the memory containing the resource data.
             //      The name of the function comes from versions prior to Windows XP, when it was used to lock a global memory block allocated by LoadResource.
-            IntPtr memTable = LockResource(msgTable);
+            IntPtr memTable = NativeMethods.LockResource(msgTable);
             LastError = Marshal.GetLastWin32Error();
             if (memTable == IntPtr.Zero)
             {
@@ -190,14 +141,13 @@
             // this code just reads the number of blocks, skips over the int (4 bytes) and starts processing each block.
 
             int numberOfBlocks = Marshal.ReadInt32(memTable);
-            LastError = Marshal.GetLastWin32Error();
             if (numberOfBlocks == 0)
             {
-                Console.WriteLine("Zero entries found in message table. Error code returned:{0}", LastError);
+                Console.WriteLine("Zero entries found in message table.");
                 return null;
             }
             
-            // skip past the integer read above.
+            // skip past the integerread above.
             IntPtr blockPtr = IntPtr.Add(memTable, 4);
 
             // get the size of block in bytes to increment the IntPtr by.
@@ -261,7 +211,7 @@
             // unlock resource?
             // unload Library?
 
-            FreeLibrary(hModule);
+            NativeMethods.FreeLibrary(hModule);
 
             return Messages;
         } // public static Dictionary<string,string> EnumerateMessageTable(
@@ -274,7 +224,7 @@
         public string ReadmoduleMessage(uint MessageId)
         {
             IntPtr stringBuffer = IntPtr.Zero;
-            int returnVal = FormatMessage(FormatMessageFlags.FORMAT_MESSAGE_FROM_HMODULE | FormatMessageFlags.FORMAT_MESSAGE_ALLOCATE_BUFFER,
+            int returnVal = NativeMethods.FormatMessage(NativeMethods.FormatMessageFlags.FORMAT_MESSAGE_FROM_HMODULE | NativeMethods.FormatMessageFlags.FORMAT_MESSAGE_ALLOCATE_BUFFER,
                 this.moduleHandle,
                 MessageId,
                 0, // default language
@@ -292,7 +242,7 @@
             string messageString = Marshal.PtrToStringAnsi(stringBuffer).Replace("\r\n", "");
 
             // Free the buffer.
-            HeapFree(hDefaultProcessHeap, 0, stringBuffer);
+            NativeMethods.HeapFree(hDefaultProcessHeap, 0, stringBuffer);
             return messageString;
         } // public string ReadmoduleMessage(uint MessageId)
 
@@ -305,16 +255,16 @@
         public static string ReadModuleSingleMessage (string ModulePath, uint MessageID)
         {
             IntPtr stringBuffer = IntPtr.Zero;
-            IntPtr hDefaultProcessHeap = GetProcessHeap();
+            IntPtr hDefaultProcessHeap = NativeMethods.GetProcessHeap();
 
-            IntPtr hModule = LoadLibrary(ModulePath);
+            IntPtr hModule = NativeMethods.LoadLibrary(ModulePath);
             if (hModule == IntPtr.Zero)
             {
                 int LastError = Marshal.GetLastWin32Error();
                 Console.WriteLine("Error loading library. Error code returned:{0}", LastError);
                 return string.Empty;
             }
-            int returnVal = FormatMessage(FormatMessageFlags.FORMAT_MESSAGE_FROM_HMODULE | FormatMessageFlags.FORMAT_MESSAGE_ALLOCATE_BUFFER,
+            int returnVal = NativeMethods.FormatMessage(NativeMethods.FormatMessageFlags.FORMAT_MESSAGE_FROM_HMODULE | NativeMethods.FormatMessageFlags.FORMAT_MESSAGE_ALLOCATE_BUFFER,
                 hModule,
                 MessageID,
                 0, // default language
@@ -331,9 +281,9 @@
             string messageString = Marshal.PtrToStringAnsi(stringBuffer).Replace("\r\n","");
 
             // Free the buffer.
-            int heapFreeStatus = HeapFree(hDefaultProcessHeap, 0, stringBuffer);
+            int heapFreeStatus = NativeMethods.HeapFree(hDefaultProcessHeap, 0, stringBuffer);
             // unload the library
-            FreeLibrary(hModule);
+            NativeMethods.FreeLibrary(hModule);
             return messageString;
         } // public static string ReadModuleMessage (string ModulePath, uint MessageID)
 
@@ -347,7 +297,7 @@
             IntPtr MessageTablePointer = IntPtr.Zero;
 
             // Determines the location of a resource with the specified type and name in the specified module.
-            IntPtr msgTableInfo = FindResource(hModule, 1, RT_MESSAGETABLE);
+            IntPtr msgTableInfo = NativeMethods.FindResource(hModule, 1, RT_MESSAGETABLE);
             if (msgTableInfo == IntPtr.Zero)
             {
                 int LastError = Marshal.GetLastWin32Error();
@@ -355,7 +305,7 @@
                 return MessageTablePointer;
             }
             // Retrieves a handle that can be used to obtain a pointer to the first byte of the specified resource in memory.
-            MessageTablePointer = LoadResource(hModule, msgTableInfo);
+            MessageTablePointer = NativeMethods.LoadResource(hModule, msgTableInfo);
             if (MessageTablePointer == IntPtr.Zero)
             {
                 int LastError = Marshal.GetLastWin32Error();
