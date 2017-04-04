@@ -54,7 +54,7 @@
             /// <summary>
             /// Pointer to an array that contains the error message or message box display text. 
             /// </summary>
-            public byte Text;
+            public IntPtr Text;
         }
 
         /// <summary>
@@ -70,7 +70,7 @@
         public static Dictionary<string, string> EnumerateMessageTable(string ModulePath)
         {
             int LastError = -1;
-            Dictionary<string, string> Messages = new Dictionary<string, string>();
+            Dictionary<string, string> readMessages = new Dictionary<string, string>();
 
             // steps overview:
             // 1) load the library (into memory)
@@ -87,14 +87,14 @@
             {
                  
                 Console.WriteLine("Error loading library. Win32 error returned:{0}", LastError);
-                return Messages;
+                return readMessages;
             }
 
             IntPtr msgTable = LoadMessageTableResource(hModule);
 
             if (msgTable == IntPtr.Zero)
             {
-                return Messages;
+                return readMessages;
             }
             
             // Retrieves a pointer to the specified resource in memory. 
@@ -143,53 +143,41 @@
                 // iterate over all of the entries in the block
                 for (int id = block.LowId; id <= block.HighId; id++)
                 {
-                    var entry = Marshal.PtrToStructure<MESSAGE_RESOURCE_ENTRY>(entryPtr);
-                    messagePtr = IntPtr.Add(entryPtr, Marshal.SizeOf(entryPtr));
-                    var MessageData = Marshal.PtrToStructure<MESSAGE_RESOURCE_ENTRY>(messagePtr);
-
-                    byte[] foo = new byte[entry.Length];
-                    IntPtr textData = IntPtr.Add(entryPtr, 4);
-                    //Marshal.Copy(textData, foo, 0, entry.Length);
-                    string Message = Marshal.PtrToStringAuto(textData);
-
-                    // pointer arithmetic.
-                    // The length, in bytes, of the MESSAGE_RESOURCE_ENTRY structure. 
+                    // MESSAGE_RESOURCE_ENTRY is {WORD Length, WORD Flags, Byte[] Text} format structure.
+                    // Reference: https://msdn.microsoft.com/en-us/library/windows/desktop/ms648022(v=vs.85).aspx
+                    // pointer arithmetic time!
+                    // The length, in bytes, of the entire MESSAGE_RESOURCE_ENTRY structure. 
                     var length = Marshal.ReadInt16(entryPtr);
-                    // Indicates that the string is encoded in Unicode, if equal to the value 0x0001. 
-                    // Indicates that the string is encoded in ANSI, if equal to the value 0x0000. 
+                    // 0x0000 Indicates that the string is encoded in ANSI, if equal to the value . 
+                    // 0x0001 Indicates that the string is encoded in Unicode, if equal to the value . 
                     var flags = Marshal.ReadInt16(entryPtr, 2);
-                    // Pointer to an array that contains the error message or message box display text. 
+                    // Pointer to a byte array that contains the error message or message box display text. 
                     IntPtr textPtr = IntPtr.Add(entryPtr, 4);
 
-                    var testText = string.Empty;
                     var text = "<<Message Unreadable>>";
+                    // ANSI/Unicode check
                     if (flags == 0)
                     {
                         text = Marshal.PtrToStringAnsi(textPtr);
-                        //testText = Marshal.PtrToStringAnsi(entry.Text);
                     }
                     else if (flags == 1)
                     {
                         text = Marshal.PtrToStringUni(textPtr);
-                        //testText = Marshal.PtrToStringUni(entry.Text);
                     }
-                    //text = text.Replace("\r\n", "");
-                    Messages.Add(id.ToString(), text);
+                    // add to output
+                    readMessages.Add(id.ToString(), text);
 
-                    // skip to next entry.
+                    // move to next entry.
                     entryPtr = IntPtr.Add(entryPtr, length);
                 }
                 // skip to next block.
                 blockPtr = IntPtr.Add(blockPtr, blockSize);
             } // for (int i = 0; i < numberOfBlocks; i++)
 
-            // to implement?
-            // unlock resource?
-            // unload Library?
-
+            // free module.
             NativeMethods.FreeLibrary(hModule);
 
-            return Messages;
+            return readMessages;
         } // public static Dictionary<string,string> EnumerateMessageTable
 
         /// <summary>
