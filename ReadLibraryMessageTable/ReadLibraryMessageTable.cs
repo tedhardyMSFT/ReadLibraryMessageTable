@@ -115,8 +115,7 @@
             {
                 return Messages;
             }
-
-
+            
             // Retrieves a pointer to the specified resource in memory. 
             // MSDN Remarks on LockResource function:
             // The pointer returned by LockResource is valid until the module containing the resource is unloaded. 
@@ -159,13 +158,12 @@
 
                 // skip over the bytes in the block as indicated to get to the message_block_entry structure
                 IntPtr entryPtr = IntPtr.Add(memTable, block.OffsetToEntries);
-
+                var messagePtr = IntPtr.Zero;
                 // iterate over all of the entries in the block
                 for (int id = block.LowId; id <= block.HighId; id++)
                 {
                     var entry = Marshal.PtrToStructure<MESSAGE_RESOURCE_ENTRY>(entryPtr);
-
-                    var messagePtr = new IntPtr(entryPtr.ToInt32() + Marshal.SizeOf(entryPtr));
+                    messagePtr = IntPtr.Add(entryPtr, Marshal.SizeOf(entryPtr));
                     var MessageData = Marshal.PtrToStructure<MESSAGE_RESOURCE_ENTRY>(messagePtr);
 
                     byte[] foo = new byte[entry.Length];
@@ -194,7 +192,7 @@
                         text = Marshal.PtrToStringUni(textPtr);
                         //testText = Marshal.PtrToStringUni(entry.Text);
                     }
-                    text = text.Replace("\r\n", "");
+                    //text = text.Replace("\r\n", "");
                     Messages.Add(id.ToString(), text);
 
                     // skip to next entry.
