@@ -7,9 +7,6 @@
 
     public class ReadMessageTable
     {
-
-
-
         /// <summary>
         /// Resource type for Message Table
         /// See: https://msdn.microsoft.com/en-us/library/windows/desktop/ms648009(v=vs.85).aspx

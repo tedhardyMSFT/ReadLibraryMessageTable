@@ -24,21 +24,22 @@ namespace ReadLibraryMessageTable
             FORMAT_MESSAGE_FROM_STRING = 0x00000400,
         }
 
+        //TODO:DOC
         [DllImport("kernel32.dll", SetLastError = true)]
         internal static extern IntPtr LoadLibrary(string fileName);
-
+        //TODO:DOC
         [DllImport("kernel32.dll", SetLastError = true)]
         internal static extern IntPtr FindResource(IntPtr hModule, int lpID, int lpType);
-
+        //TODO:DOC
         [DllImport("kernel32.dll", SetLastError = true)]
         internal static extern IntPtr LoadResource(IntPtr hModule, IntPtr hResInfo);
-
+        //TODO:DOC
         [DllImport("kernel32.dll", SetLastError = true)]
         internal static extern IntPtr LockResource(IntPtr hResData);
-
+        //TODO:DOC
         [DllImport("kernel32.dll", SetLastError = true)]
         internal static extern IntPtr GetProcessHeap();
-
+        //TODO:DOC
         [DllImport("kernel32.dll", SetLastError = true)]
         internal static extern int HeapFree(IntPtr hHeap, int dwFlags, IntPtr lpMem);
 
@@ -50,7 +51,7 @@ namespace ReadLibraryMessageTable
         /// <returns></returns>
         [DllImport("kernel32.dll", SetLastError = true)]
         internal static extern uint FreeLibrary(IntPtr hModule);
-
+        //TODO:DOC
         [DllImport("kernel32.dll", SetLastError = true)]
         internal static extern int FormatMessage(
             FormatMessageFlags dwFlags,
@@ -61,5 +62,5 @@ namespace ReadLibraryMessageTable
             uint nSize,
             IntPtr Arguments);
 
-    }
-}
+    } // class NativeMethods
+} // namespace ReadLibraryMessageTable
