@@ -67,25 +67,6 @@
         /// </summary>
         private static IntPtr hDefaultProcessHeap = NativeMethods.GetProcessHeap();
 
-        /// <summary>
-        /// Instantiates a new instance of blah blah 
-        /// TODO:DOC
-        /// </summary>
-        /// <param name="ModulePath"></param>
-        //public ReadMessageTable(string ModulePath)
-        //{
-        //    IntPtr hModule = NativeMethods.LoadLibrary(ModulePath);
-        //    if (hModule == IntPtr.Zero)
-        //    {
-        //        int LastError = Marshal.GetLastWin32Error();
-        //        throw new DllNotFoundException(string.Format("Error loading library. Error code returned:{0}", LastError));
-        //    } 
-        //    else
-        //    {
-        //        this.moduleHandle = hModule;
-        //    }
-        //} // public ReadMessageTable(string ModulePath)
-
         public static Dictionary<string, string> EnumerateMessageTable(string ModulePath)
         {
             int LastError = -1;
@@ -105,7 +86,7 @@
             if (hModule == IntPtr.Zero)
             {
                  
-                Console.WriteLine("Error loading library. Win32 error code returned:{0}", LastError);
+                Console.WriteLine("Error loading library. Win32 error returned:{0}", LastError);
                 return Messages;
             }
 
@@ -128,7 +109,7 @@
             if (memTable == IntPtr.Zero)
             {
                 
-                Console.WriteLine("Error locking message table in memory. Win32 error code returned:{0}", LastError);
+                Console.WriteLine("Error locking message table in memory. Win32 error returned:{0}", LastError);
                 return null;
             }
 
@@ -209,37 +190,7 @@
             NativeMethods.FreeLibrary(hModule);
 
             return Messages;
-        } // public static Dictionary<string,string> EnumerateMessageTable(
-
-        /// <summary>
-        /// Using the default language, searches the module for the message ID and returns it.
-        /// </summary>
-        /// <param name="MessageId">Message ID to search for.</param>
-        /// <returns>string resource found. if nothing then empty string.</returns>
-        //public string ReadmoduleMessage(uint MessageId)
-        //{
-        //    IntPtr stringBuffer = IntPtr.Zero;
-        //    int returnVal = NativeMethods.FormatMessage(NativeMethods.FormatMessageFlags.FORMAT_MESSAGE_FROM_HMODULE | NativeMethods.FormatMessageFlags.FORMAT_MESSAGE_ALLOCATE_BUFFER,
-        //        this.moduleHandle,
-        //        MessageId,
-        //        0, // default language
-        //        ref stringBuffer,
-        //        0,
-        //        IntPtr.Zero);
-
-        //    if (returnVal == 0)
-        //    {
-        //        int errorCode = Marshal.GetLastWin32Error();
-        //        Console.WriteLine("unable to retrieve message, error code returned:{0}", errorCode);
-        //        return string.Empty;
-        //    }
-
-        //    string messageString = Marshal.PtrToStringAnsi(stringBuffer).Replace("\r\n", "");
-
-        //    // Free the buffer.
-        //    NativeMethods.HeapFree(hDefaultProcessHeap, 0, stringBuffer);
-        //    return messageString;
-        //} // public string ReadmoduleMessage(uint MessageId)
+        } // public static Dictionary<string,string> EnumerateMessageTable
 
         /// <summary>
         /// Looks up a message Id in the module (dll or exe) specified. If nothing found then returns an empty string.
@@ -256,7 +207,7 @@
             if (hModule == IntPtr.Zero)
             {
                 int LastError = Marshal.GetLastWin32Error();
-                Console.WriteLine("Error loading library. Error code returned:{0}", LastError);
+                Console.WriteLine("Error loading library. Win32 error returned:{0}", LastError);
                 return string.Empty;
             }
             int returnVal = NativeMethods.FormatMessage(NativeMethods.FormatMessageFlags.FORMAT_MESSAGE_FROM_HMODULE | NativeMethods.FormatMessageFlags.FORMAT_MESSAGE_ALLOCATE_BUFFER,
@@ -270,10 +221,10 @@
             if (returnVal == 0)
             {
                 int errorCode = Marshal.GetLastWin32Error();
-                Console.WriteLine ("unable to retrieve message, error code returned:{0}", errorCode);
+                Console.WriteLine ("unable to retrieve message, Win32 error returned:{0}", errorCode);
                 return string.Empty;
             }
-            string messageString = Marshal.PtrToStringAnsi(stringBuffer).Replace("\r\n","");
+            string messageString = Marshal.PtrToStringAnsi(stringBuffer);
 
             // Free the buffer.
             int heapFreeStatus = NativeMethods.HeapFree(hDefaultProcessHeap, 0, stringBuffer);
@@ -299,7 +250,7 @@
             if (msgTableInfo == IntPtr.Zero)
             {
                 int LastError = Marshal.GetLastWin32Error();
-                Console.WriteLine("Error finding message table in library. Error code returned:{0}", LastError);
+                Console.WriteLine("Error finding message table in library. Win32 error returned:{0}", LastError);
                 return MessageTablePointer;
             }
             // Retrieves a handle that can be used to obtain a pointer to the first byte of the specified resource in memory.
@@ -307,7 +258,7 @@
             if (MessageTablePointer == IntPtr.Zero)
             {
                 int LastError = Marshal.GetLastWin32Error();
-                Console.WriteLine("Error loading message table from library. Error code returned:{0}", LastError);
+                Console.WriteLine("Error loading message table from library. Win32 error returned:{0}", LastError);
                 return MessageTablePointer;
             }
             return MessageTablePointer;
