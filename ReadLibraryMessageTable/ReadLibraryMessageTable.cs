@@ -290,9 +290,12 @@
         private static IntPtr LoadMessageTableResource (IntPtr hModule)
         {
             IntPtr MessageTablePointer = IntPtr.Zero;
+            // use pointers for values to avoid architecture portability issues.
+            IntPtr resourceName = new IntPtr(1);
+            IntPtr resourceType = new IntPtr((int)RT_MESSAGETABLE);
 
             // Determines the location of a resource with the specified type and name in the specified module.
-            IntPtr msgTableInfo = NativeMethods.FindResource(hModule, 1, RT_MESSAGETABLE);
+            IntPtr msgTableInfo = NativeMethods.FindResource(hModule, resourceName, resourceType);
             if (msgTableInfo == IntPtr.Zero)
             {
                 int LastError = Marshal.GetLastWin32Error();
