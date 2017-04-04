@@ -25,11 +25,18 @@ namespace ReadLibraryMessageTable
         }
 
         //TODO:DOC
-        [DllImport("kernel32.dll", SetLastError = true)]
+        [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
         internal static extern IntPtr LoadLibrary(string fileName);
-        //TODO:DOC
+        /// <summary>
+        /// Determines the location of a resource with the specified type and name in the specified module.
+        /// Reference: https://msdn.microsoft.com/en-us/library/windows/desktop/ms648042(v=vs.85).aspx
+        /// </summary>
+        /// <param name="hModule">A handle to the module whose portable executable file or an accompanying MUI file contains the resource. If this parameter is NULL, the function searches the module used to create the current process.</param>
+        /// <param name="lpID">The name of the resource. Alternately, rather than a pointer, this parameter can be MAKEINTRESOURCE(ID), where ID is the integer identifier of the resource. For more information, see the Remarks section below.</param>
+        /// <param name="lpType">The resource type. Alternately, rather than a pointer, this parameter can be MAKEINTRESOURCE(ID), where ID is the integer identifier of the given resource type.</param>
+        /// <returns></returns>
         [DllImport("kernel32.dll", SetLastError = true)]
-        internal static extern IntPtr FindResource(IntPtr hModule, int lpID, int lpType);
+        internal static extern IntPtr FindResource(IntPtr hModule, IntPtr lpID, IntPtr lpType);
         //TODO:DOC
         [DllImport("kernel32.dll", SetLastError = true)]
         internal static extern IntPtr LoadResource(IntPtr hModule, IntPtr hResInfo);
