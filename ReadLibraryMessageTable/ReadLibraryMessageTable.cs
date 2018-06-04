@@ -1,9 +1,46 @@
 ﻿namespace ReadLibraryMessageTable
 {
+
     using System;
     using System.Collections.Generic;
     using System.Text;
     using System.Runtime.InteropServices;
+    using System.ComponentModel;
+
+    public class ReadLibraryException : Exception
+    {
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="Message">Message describing the exception.</param>
+        public ReadLibraryException(string Message) : base(Message)
+        {
+            Win32ErrorCode = -1;
+            Win32ErrorMessage = null;
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="Message">Message describing the exception.</param>
+        /// <param name="Win32Error">Native Windows API Error code returned</param>
+        public ReadLibraryException(string Message, int Win32Error) : base(Message)
+        {
+            Win32ErrorCode = Win32Error;
+            Win32ErrorMessage = new Win32Exception(Win32ErrorCode).Message;
+        }
+
+        /// <summary>
+        /// Win32 error code returned from the underlying API.
+        /// </summary>
+        public Int32 Win32ErrorCode { get; private set; }
+
+        /// <summary>
+        /// Localized message for the supplied win32 error code.
+        /// </summary>
+        public string Win32ErrorMessage { get; private set; }
+    } // public class ReadLibraryException : Exception
+
 
     public class ReadMessageTable
     {
@@ -138,6 +175,11 @@
             }
         } // public ReadMessageTable(string ModulePath)
 
+        /// <summary>
+        /// Reads the message table for the library referenced by ModulePath and returns all of the messages found.
+        /// </summary>
+        /// <param name="ModulePath">Full path to the library</param>
+        /// <returns></returns>
         public static Dictionary<string, string> EnumerateMessageTable(string ModulePath)
         {
             Dictionary<string, string> Messages = new Dictionary<string, string>();
@@ -148,15 +190,14 @@
             // 3) Get a handle that can be used to get a pointer
             // 4) get the above mentioned pointer to the first byte of the resource.
             // 5) get a count for the number of blocks
-            // 6) for each block, read the 
+            // 6) for each block, read the ranges in the block
 
             // Loads the specified module into the address space of the calling process. The specified module may cause other modules to be loaded.
             IntPtr hModule = LoadLibrary(ModulePath);
             if (hModule == IntPtr.Zero)
             {
                 int LastError = Marshal.GetLastWin32Error();
-                Console.WriteLine("Error loading library. Error code returned:{0}", LastError);
-                return Messages;
+                throw new ReadLibraryException(string.Format("Error loading library from {0}.", ModulePath), LastError);
             }
 
             IntPtr msgTable = LoadMessageTableResource(hModule);
@@ -218,22 +259,20 @@
                     var messagePtr = new IntPtr(entryPtr.ToInt32() + Marshal.SizeOf(entryPtr));
                     var MessageData = Marshal.PtrToStructure<MESSAGE_RESOURCE_ENTRY>(messagePtr);
 
-                    byte[] foo = new byte[entry.Length];
                     IntPtr textData = IntPtr.Add(entryPtr, 4);
-                    //Marshal.Copy(textData, foo, 0, entry.Length);
                     string Message = Marshal.PtrToStringAuto(textData);
 
                     // pointer arithmetic.
-                    // The length, in bytes, of the MESSAGE_RESOURCE_ENTRY structure. 
+                    // read the length, in bytes, of the MESSAGE_RESOURCE_ENTRY structure. 
                     var length = Marshal.ReadInt16(entryPtr);
-                    // Indicates that the string is encoded in Unicode, if equal to the value 0x0001. 
-                    // Indicates that the string is encoded in ANSI, if equal to the value 0x0000. 
+                    // flags: Indicates that the string is encoded in Unicode, if equal to the value 0x0001. 
+                    //        Indicates that the string is encoded in ANSI, if equal to the value 0x0000. 
                     var flags = Marshal.ReadInt16(entryPtr, 2);
                     // Pointer to an array that contains the error message or message box display text. 
                     IntPtr textPtr = IntPtr.Add(entryPtr, 4);
 
                     var testText = string.Empty;
-                    var text = "<<Message Unreadable>>";
+                    var text = "";
                     if (flags == 0)
                     {
                         text = Marshal.PtrToStringAnsi(textPtr);
@@ -256,8 +295,6 @@
 
             // to implement?
             // unlock resource?
-            // unload Library?
-
             FreeLibrary(hModule);
 
             return Messages;
@@ -271,6 +308,8 @@
         public string ReadmoduleMessage(uint MessageId)
         {
             IntPtr stringBuffer = IntPtr.Zero;
+            // attempt to read the specific message from the library
+            // returns zero upon error, otherwise the number of TCHARS in output buffer.
             int returnVal = FormatMessage(FormatMessageFlags.FORMAT_MESSAGE_FROM_HMODULE | FormatMessageFlags.FORMAT_MESSAGE_ALLOCATE_BUFFER,
                 this.moduleHandle,
                 MessageId,
@@ -279,14 +318,15 @@
                 0,
                 IntPtr.Zero);
 
+            // check if no characters returned (error condition)
             if (returnVal == 0)
             {
                 int errorCode = Marshal.GetLastWin32Error();
-                Console.WriteLine("unable to retrieve message, error code returned:{0}", errorCode);
+                Console.WriteLine("unable to retrieve message, FormatMessage error code returned:{0}", errorCode);
                 return string.Empty;
             }
-
-            string messageString = Marshal.PtrToStringAnsi(stringBuffer).Replace("\r\n", "");
+            // read output buffer
+            string messageString = Marshal.PtrToStringAnsi(stringBuffer);//.Replace("\r\n", "");
 
             // Free the buffer.
             HeapFree(hDefaultProcessHeap, 0, stringBuffer);
@@ -308,8 +348,7 @@
             if (hModule == IntPtr.Zero)
             {
                 int LastError = Marshal.GetLastWin32Error();
-                Console.WriteLine("Error loading library. Error code returned:{0}", LastError);
-                return string.Empty;
+                throw new ReadLibraryException(string.Format("Error loading library {0}.", ModulePath), LastError);
             }
             int returnVal = FormatMessage(FormatMessageFlags.FORMAT_MESSAGE_FROM_HMODULE | FormatMessageFlags.FORMAT_MESSAGE_ALLOCATE_BUFFER,
                 hModule,
@@ -319,13 +358,14 @@
                 0,
                 IntPtr.Zero);
 
+            //FormatMessage returns zero on error, otherwise number of chars in buffer.
             if (returnVal == 0)
             {
                 int errorCode = Marshal.GetLastWin32Error();
-                Console.WriteLine ("unable to retrieve message, error code returned:{0}", errorCode);
-                return string.Empty;
+                throw new ReadLibraryException(string.Format("Unable to retrieve message id {0} from library: {1}", MessageID, ModulePath), errorCode);
             }
-            string messageString = Marshal.PtrToStringAnsi(stringBuffer).Replace("\r\n","");
+            // read buffer
+            string messageString = Marshal.PtrToStringAnsi(stringBuffer);//.Replace("\r\n","");
 
             // Free the buffer.
             int heapFreeStatus = HeapFree(hDefaultProcessHeap, 0, stringBuffer);
@@ -348,16 +388,14 @@
             if (msgTableInfo == IntPtr.Zero)
             {
                 int LastError = Marshal.GetLastWin32Error();
-                Console.WriteLine("Error finding message table in library. Error code returned:{0}", LastError);
-                return MessageTablePointer;
+                throw new ReadLibraryException("Error finding message table in library.", LastError);
             }
             // Retrieves a handle that can be used to obtain a pointer to the first byte of the specified resource in memory.
             MessageTablePointer = LoadResource(hModule, msgTableInfo);
             if (MessageTablePointer == IntPtr.Zero)
             {
                 int LastError = Marshal.GetLastWin32Error();
-                Console.WriteLine("Error loading message table from library. Error code returned:{0}", LastError);
-                return MessageTablePointer;
+                throw new ReadLibraryException("Error loading message table from library.", LastError);
             }
             return MessageTablePointer;
         } // private static IntPtr LoadMessageTableResource (IntPtr hModule)
