@@ -16,8 +16,8 @@ namespace RlmtTestShell
             System.Threading.Thread.Sleep(1000);
 
             Messages = ReadMessageTable.EnumerateMessageTable(@"C:\Windows\System32\msobjs.dll");
-            Messages = ReadMessageTable.EnumerateMessageTable(@"C:\Windows\System32\notepad.exe");
-            string Message = ReadMessageTable.ReadModuleSingleMessage(@"C:\Windows\system32\msobjs.dll", 1612);
+            //Messages = ReadMessageTable.EnumerateMessageTable(@"C:\Windows\System32\notepad.exe");
+            string Message = ReadMessageTable.ReadModuleSingleMessage(@"C:\Windows\system32\msobjs.dll", 9999);
 
             Console.WriteLine(Message);
 
