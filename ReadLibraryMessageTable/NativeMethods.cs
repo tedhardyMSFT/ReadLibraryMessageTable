@@ -24,9 +24,19 @@ namespace ReadLibraryMessageTable
             FORMAT_MESSAGE_FROM_STRING = 0x00000400,
         }
 
-        //TODO:DOC
+        /// <summary>
+        /// Loads the specified module into the address space of the calling process. The specified module may cause other modules to be loaded.
+        /// </summary>
+        /// <param name="fileName"></param>
+        /// <returns></returns>
         [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
         internal static extern IntPtr LoadLibrary(string fileName);
+
+        [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+        internal static extern IntPtr LoadLibraryEx(string fileName, IntPtr hFile, int dwFlags);
+
+
+
         /// <summary>
         /// Determines the location of a resource with the specified type and name in the specified module.
         /// Reference: https://msdn.microsoft.com/en-us/library/windows/desktop/ms648042(v=vs.85).aspx
@@ -36,7 +46,7 @@ namespace ReadLibraryMessageTable
         /// <param name="lpType">The resource type. Alternately, rather than a pointer, this parameter can be MAKEINTRESOURCE(ID), where ID is the integer identifier of the given resource type.</param>
         /// <returns></returns>
         [DllImport("kernel32.dll", SetLastError = true)]
-        internal static extern IntPtr FindResource(IntPtr hModule, IntPtr lpID, IntPtr lpType);
+        internal static extern IntPtr FindResource(IntPtr hModule, int lpID, int lpType);
         //TODO:DOC
         [DllImport("kernel32.dll", SetLastError = true)]
         internal static extern IntPtr LoadResource(IntPtr hModule, IntPtr hResInfo);
