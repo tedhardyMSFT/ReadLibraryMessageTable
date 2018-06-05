@@ -8,12 +8,13 @@ namespace RlmtTest
     [TestClass]
     public class UnitTest1
     {
+        private string SetSystemTimeExpected = "Set System Time Privilege\r\n";
         [TestMethod]
         public void ReadSetSystemTimePrivilegeMessage()
         {
-            string Expected = "Set System Time Privilege\r\n";
+            
             string Message = ReadSinglemessage(@"C:\Windows\system32\msobjs.dll", 1612);
-            Assert.AreEqual<string>(Expected, Message);
+            Assert.AreEqual<string>(SetSystemTimeExpected, Message);
         }
 
         [TestMethod]
@@ -29,6 +30,14 @@ namespace RlmtTest
 
         }
 
+        [TestMethod]
+        public void TestModuleLoading()
+        {
+            ReadMessageTable msgTbl = new ReadMessageTable(@"C:\Windows\system32\msobjs.dll");
+            string timePriv = msgTbl.ReadmoduleMessage(1612);
+            msgTbl.Dispose();
+            Assert.AreEqual<string>(timePriv, SetSystemTimeExpected);
+        }
 
 
         private string ReadSinglemessage(string libraryPath, uint messageId)

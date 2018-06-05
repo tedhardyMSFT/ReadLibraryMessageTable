@@ -42,8 +42,10 @@
         public string Win32ErrorMessage { get; private set; }
     } // public class ReadLibraryException : Exception
 
-
-    public class ReadMessageTable
+    /// <summary>
+    /// Enables reading a Library or Executable message table contents.
+    /// </summary>
+    public class ReadMessageTable : IDisposable
     {
         /// <summary>
         /// Resource type for Message Table
@@ -106,13 +108,13 @@
         private IntPtr hDefaultProcessHeap = NativeMethods.GetProcessHeap();
 
         /// <summary>
-        /// Instantiates a new instance of blah blah 
-        /// TODO:DOC
+        /// Instantiates a new instance of ReadMessageTable class.
+        /// When finished, use the FreeMessageTablefile
         /// </summary>
         /// <param name="ModulePath"></param>
         public ReadMessageTable(string ModulePath)
         {
-            IntPtr hModule = NativeMethods.LoadLibraryEx(ModulePath,IntPtr.Zero, 2);
+            IntPtr hModule = NativeMethods.LoadLibraryEx(ModulePath,IntPtr.Zero, NativeMethods.LOAD_LIBRARY_AS_DATAFILE);
             if (hModule == IntPtr.Zero)
             {
                 int LastError = Marshal.GetLastWin32Error();
@@ -123,6 +125,18 @@
                 this.moduleHandle = hModule;
             }
         } // public ReadMessageTable(string ModulePath)
+
+        /// <summary>
+        /// Disposes of the external resources and file handles.
+        /// </summary>
+        public void Dispose()
+        {
+            if (this.moduleHandle != IntPtr.Zero)
+            {
+                NativeMethods.FreeLibrary(this.moduleHandle);
+            }
+        } //public void FreeMessageTableFile()
+
 
         /// <summary>
         /// Reads the message table for the library referenced by ModulePath and returns all of the messages found.
@@ -142,7 +156,7 @@
             // 6) for each block, read the ranges in the block
 
             // Loads the specified module into the address space of the calling process. The specified module may cause other modules to be loaded.
-            IntPtr hModule = NativeMethods.LoadLibraryEx(ModulePath, IntPtr.Zero, 2);
+            IntPtr hModule = NativeMethods.LoadLibraryEx(ModulePath, IntPtr.Zero, NativeMethods.LOAD_LIBRARY_AS_DATAFILE);
             if (hModule == IntPtr.Zero)
             {
                 int LastError = Marshal.GetLastWin32Error();
@@ -259,7 +273,7 @@
             IntPtr stringBuffer = IntPtr.Zero;
             // attempt to read the specific message from the library
             // returns zero upon error, otherwise the number of TCHARS in output buffer.
-            int returnVal = NativeMethods.FormatMessage(NativeMethods.FormatMessageFlags.FORMAT_MESSAGE_FROM_HMODULE | NativeMethods.FormatMessageFlags.FORMAT_MESSAGE_ALLOCATE_BUFFER,
+            int returnVal = NativeMethods.FormatMessage(NativeMethods.FormatMessageFlags.FORMAT_MESSAGE_FROM_HMODULE | NativeMethods.FormatMessageFlags.FORMAT_MESSAGE_ALLOCATE_BUFFER | NativeMethods.FormatMessageFlags.FORMAT_MESSAGE_IGNORE_INSERTS,
                 this.moduleHandle,
                 MessageId,
                 0, // default language
@@ -293,13 +307,13 @@
             IntPtr stringBuffer = IntPtr.Zero;
             IntPtr hDefaultProcessHeap = NativeMethods.GetProcessHeap();
 
-            IntPtr hModule = NativeMethods.LoadLibraryEx(ModulePath, IntPtr.Zero, 2);
+            IntPtr hModule = NativeMethods.LoadLibraryEx(ModulePath, IntPtr.Zero, NativeMethods.LOAD_LIBRARY_AS_DATAFILE);
             if (hModule == IntPtr.Zero)
             {
                 int LastError = Marshal.GetLastWin32Error();
                 throw new ReadLibraryException(string.Format("Error loading library {0}.", ModulePath), LastError);
             }
-            int returnVal = NativeMethods.FormatMessage(NativeMethods.FormatMessageFlags.FORMAT_MESSAGE_FROM_HMODULE | NativeMethods.FormatMessageFlags.FORMAT_MESSAGE_ALLOCATE_BUFFER,
+            int returnVal = NativeMethods.FormatMessage(NativeMethods.FormatMessageFlags.FORMAT_MESSAGE_FROM_HMODULE | NativeMethods.FormatMessageFlags.FORMAT_MESSAGE_ALLOCATE_BUFFER | NativeMethods.FormatMessageFlags.FORMAT_MESSAGE_IGNORE_INSERTS,
                 hModule,
                 MessageID,
                 0, // default language
@@ -314,7 +328,7 @@
                 throw new ReadLibraryException(string.Format("Unable to retrieve message id {0} from library: {1}", MessageID, ModulePath), errorCode);
             }
             // read buffer
-            string messageString = Marshal.PtrToStringAnsi(stringBuffer);//.Replace("\r\n","");
+            string messageString = Marshal.PtrToStringAnsi(stringBuffer);
 
             // Free the buffer.
             int heapFreeStatus = NativeMethods.HeapFree(hDefaultProcessHeap, 0, stringBuffer);
@@ -348,5 +362,5 @@
             }
             return MessageTablePointer;
         } // private static IntPtr LoadMessageTableResource (IntPtr hModule)
-    }
-}
+    } // public class ReadMessageTable : IDisposable
+} // namespace ReadLibraryMessageTable
