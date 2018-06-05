@@ -31,6 +31,23 @@ namespace RlmtTest
         }
 
         [TestMethod]
+        [ExpectedException(typeof(ReadLibraryException))]
+        public void ReadInvalidMessageTable()
+        {
+            Dictionary<string, string> messageTable = new Dictionary<string, string>();
+            string LibraryPath = @"C:\Windows\system32\msobjs2.dll";
+
+            messageTable = ReadAllLibraryMessages(LibraryPath);
+        }
+
+        [TestMethod]
+        [ExpectedException(typeof(ReadLibraryException))]
+        public void ReadInvalidMessage()
+        {
+            string Message = ReadSinglemessage(@"C:\Windows\system32\msobjs.dll", 9999);
+        }
+
+        [TestMethod]
         public void TestModuleLoading()
         {
             ReadMessageTable msgTbl = new ReadMessageTable(@"C:\Windows\system32\msobjs.dll");
