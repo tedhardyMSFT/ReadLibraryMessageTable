@@ -7,10 +7,9 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ReadLibraryMessageTable", "
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RlmtTestShell", "RlmtTestShell\RlmtTestShell.csproj", "{A0900996-E669-46C8-A69F-BAC857AC730A}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RlmtTest", "RlmtTest\RlmtTest.csproj", "{D6877EBB-F92A-4E6F-A6EB-9EC8664AD63C}"
+EndProject
 Global
-	GlobalSection(Performance) = preSolution
-		HasPerformanceSessions = true
-	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
 		Release|Any CPU = Release|Any CPU
@@ -24,8 +23,18 @@ Global
 		{A0900996-E669-46C8-A69F-BAC857AC730A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A0900996-E669-46C8-A69F-BAC857AC730A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{A0900996-E669-46C8-A69F-BAC857AC730A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D6877EBB-F92A-4E6F-A6EB-9EC8664AD63C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D6877EBB-F92A-4E6F-A6EB-9EC8664AD63C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D6877EBB-F92A-4E6F-A6EB-9EC8664AD63C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D6877EBB-F92A-4E6F-A6EB-9EC8664AD63C}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {8DCFCA7E-8624-4F4E-9535-9D0FFCFBF715}
+	EndGlobalSection
+	GlobalSection(Performance) = preSolution
+		HasPerformanceSessions = true
 	EndGlobalSection
 EndGlobal
