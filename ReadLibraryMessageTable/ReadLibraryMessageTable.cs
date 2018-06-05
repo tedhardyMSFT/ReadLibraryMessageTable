@@ -4,10 +4,12 @@
     using System;
     using System.Collections.Generic;
     using System.Text;
+    using System.Security.Permissions;
     using System.Runtime.InteropServices;
+    using System.Runtime.Serialization;
     using System.ComponentModel;
 
-
+    [Serializable]
     public class ReadLibraryException : Exception
     {
         /// <summary>
@@ -30,6 +32,17 @@
             Win32ErrorCode = Win32Error;
             Win32ErrorMessage = new Win32Exception(Win32ErrorCode).Message;
         }
+
+
+        [SecurityPermission(SecurityAction.Demand, SerializationFormatter = true)]
+        public override void GetObjectData(SerializationInfo info, StreamingContext context)
+        {
+            base.GetObjectData(info, context);
+            // add other values to object data here
+            // example:
+            // info.AddValue("CheckedOut", _CheckedOut);
+        }
+
 
         /// <summary>
         /// Win32 error code returned from the underlying API.
@@ -131,12 +144,21 @@
         /// </summary>
         public void Dispose()
         {
+            this.Dispose(true);
+        } //public void FreeMessageTableFile()
+
+        /// <summary>
+        /// Disposes of unmanaged resources.
+        /// </summary>
+        /// <param name="freeAll">if true both managed and unmanaged resources will be freed.</param>
+        protected virtual void Dispose(bool freeAll)
+        {
             if (this.moduleHandle != IntPtr.Zero)
             {
                 NativeMethods.FreeLibrary(this.moduleHandle);
             }
-        } //public void FreeMessageTableFile()
-
+            GC.SuppressFinalize(this);
+        }
 
         /// <summary>
         /// Reads the message table for the library referenced by ModulePath and returns all of the messages found.
@@ -146,7 +168,7 @@
         public static Dictionary<string, string> EnumerateMessageTable(string ModulePath)
         {
             Dictionary<string, string> Messages = new Dictionary<string, string>();
-
+            int LastError = -1;
             // steps overview:
             // 1) load the library (into memory)
             // 2) locate the resource type in the memory (we're interested in a Message Table)
@@ -157,9 +179,10 @@
 
             // Loads the specified module into the address space of the calling process. The specified module may cause other modules to be loaded.
             IntPtr hModule = NativeMethods.LoadLibraryEx(ModulePath, IntPtr.Zero, NativeMethods.LOAD_LIBRARY_AS_DATAFILE);
+            LastError = Marshal.GetLastWin32Error();
             if (hModule == IntPtr.Zero)
             {
-                int LastError = Marshal.GetLastWin32Error();
+                
                 throw new ReadLibraryException(string.Format("Error loading library from {0}.", ModulePath), LastError);
             }
 
@@ -167,9 +190,9 @@
 
             if (msgTable == IntPtr.Zero)
             {
+                // no message table resources
                 return Messages;
             }
-
 
             // Retrieves a pointer to the specified resource in memory. 
             // MSDN Remarks on LockResource function:
@@ -179,11 +202,10 @@
             // Note  LockResource does not actually lock memory; it is just used to obtain a pointer to the memory containing the resource data.
             //      The name of the function comes from versions prior to Windows XP, when it was used to lock a global memory block allocated by LoadResource.
             IntPtr memTable = NativeMethods.LockResource(msgTable);
+            LastError = Marshal.GetLastWin32Error();
             if (memTable == IntPtr.Zero)
             {
-                int LastError = Marshal.GetLastWin32Error();
-                Console.WriteLine("Error locking message table in memory. Error code returned:{0}", LastError);
-                return null;
+                throw new ReadLibraryException("Error locking message table in memory.", LastError);
             }
 
             // memTable is a pointer to a MESSAGE_RESOURCE_DATA structure,
@@ -193,8 +215,7 @@
             int numberOfBlocks = Marshal.ReadInt32(memTable);
             if (numberOfBlocks == 0)
             {
-                int LastError = Marshal.GetLastWin32Error();
-                Console.WriteLine("Zero entries found in message table. Error code returned:{0}", LastError);
+                Console.WriteLine("Zero entries found in message table.");
                 return null;
             }
             
@@ -228,14 +249,13 @@
                     // pointer arithmetic.
                     // read the length, in bytes, of the MESSAGE_RESOURCE_ENTRY structure. 
                     var length = Marshal.ReadInt16(entryPtr);
-                    // flags: Indicates that the string is encoded in Unicode, if equal to the value 0x0001. 
-                    //        Indicates that the string is encoded in ANSI, if equal to the value 0x0000. 
+                    // flags: 0x0001 Indicates that the string is encoded in Unicode
+                    //        0x0000 Indicates that the string is encoded in ANSI
                     var flags = Marshal.ReadInt16(entryPtr, 2);
                     // Pointer to an array that contains the error message or message box display text. 
                     IntPtr textPtr = IntPtr.Add(entryPtr, 4);
-
                     var testText = string.Empty;
-                    var text = "";
+                    var text = string.Empty;
                     if (flags == 0)
                     {
                         text = Marshal.PtrToStringAnsi(textPtr);
@@ -247,7 +267,8 @@
                         //testText = Marshal.PtrToStringUni(entry.Text);
                     }
                     text = text.Replace("\r\n", "");
-                    Messages.Add(id.ToString(), text);
+                    // add ID and test to output Dictionary
+                    Messages.Add(((uint)id).ToString(), text);
 
                     // skip to next entry.
                     entryPtr = IntPtr.Add(entryPtr, length);
@@ -268,7 +289,18 @@
         /// </summary>
         /// <param name="MessageId">Message ID to search for.</param>
         /// <returns>string resource found. if nothing then empty string.</returns>
-        public string ReadmoduleMessage(uint MessageId)
+        public string ReadModuleMessage(uint MessageId)
+        {
+            return ReadModuleMessage(MessageId, 0);
+        }
+
+        /// <summary>
+        /// Using the specified language ID, searches the module for the message ID and returns it.
+        /// </summary>
+        /// <param name="MessageId">Message ID to search for.</param>
+        /// <param name="langaugeId">Language ID to use.</param>
+        /// <returns>string resource found. if nothing then empty string.</returns>
+        public string ReadModuleMessage(uint MessageId, uint langaugeId)
         {
             IntPtr stringBuffer = IntPtr.Zero;
             // attempt to read the specific message from the library
@@ -276,7 +308,7 @@
             int returnVal = NativeMethods.FormatMessage(NativeMethods.FormatMessageFlags.FORMAT_MESSAGE_FROM_HMODULE | NativeMethods.FormatMessageFlags.FORMAT_MESSAGE_ALLOCATE_BUFFER | NativeMethods.FormatMessageFlags.FORMAT_MESSAGE_IGNORE_INSERTS,
                 this.moduleHandle,
                 MessageId,
-                0, // default language
+                langaugeId, // default language
                 ref stringBuffer,
                 0,
                 IntPtr.Zero);
@@ -297,12 +329,25 @@
         } // public string ReadmoduleMessage(uint MessageId)
 
         /// <summary>
-        /// Looks up a message Id in the module (dll or exe) specified. If nothing found then returns an empty string.
+        /// Looks up a message Id in the module (dll or exe) specified using the default system LanguageId. If nothing found then returns an empty string.
         /// </summary>
         /// <param name="ModulePath">Path to the module containing the messages</param>
         /// <param name="MessageID">message ID to look up</param>
         /// <returns>Message string found. if nothing found then an empty string.</returns>
-        public static string ReadModuleSingleMessage (string ModulePath, uint MessageID)
+        public static string ReadModuleSingleMessage(string ModulePath, uint MessageID)
+        {
+            return ReadModuleSingleMessage(ModulePath, MessageID, 0);
+        }
+
+
+        /// <summary>
+        /// Looks up a message Id in the module (dll or exe) specified using the supplied LanguageId. If nothing found then returns an empty string.
+        /// </summary>
+        /// <param name="ModulePath">Path to the module containing the messages</param>
+        /// <param name="MessageID">message ID to look up</param>
+        /// <param name="LanguageId">Language ID to use</param>
+        /// <returns>Message string found. if nothing found then an empty string.</returns>
+        public static string ReadModuleSingleMessage (string ModulePath, uint MessageID, uint LanguageId)
         {
             IntPtr stringBuffer = IntPtr.Zero;
             IntPtr hDefaultProcessHeap = NativeMethods.GetProcessHeap();
@@ -316,15 +361,14 @@
             int returnVal = NativeMethods.FormatMessage(NativeMethods.FormatMessageFlags.FORMAT_MESSAGE_FROM_HMODULE | NativeMethods.FormatMessageFlags.FORMAT_MESSAGE_ALLOCATE_BUFFER | NativeMethods.FormatMessageFlags.FORMAT_MESSAGE_IGNORE_INSERTS,
                 hModule,
                 MessageID,
-                0, // default language
+                LanguageId,
                 ref stringBuffer,
                 0,
                 IntPtr.Zero);
-
+            int errorCode = Marshal.GetLastWin32Error();
             //FormatMessage returns zero on error, otherwise number of chars in buffer.
             if (returnVal == 0)
             {
-                int errorCode = Marshal.GetLastWin32Error();
                 throw new ReadLibraryException(string.Format("Unable to retrieve message id {0} from library: {1}", MessageID, ModulePath), errorCode);
             }
             // read buffer

@@ -48,9 +48,20 @@ namespace ReadLibraryMessageTable
         /// <param name="fileName">A string that specifies the file name of the module to load.</param>
         /// <param name="hFile">This parameter is reserved for future use. It must be NULL.</param>
         /// <param name="dwFlags">FormatMessageFlags specifying the action to be taken when loading the module. If no flags are specified, the behavior of this function is identical to that of the LoadLibrary function.</param>
-        /// <returns></returns>
+        /// <returns>If the function succeeds, the return value is a handle to the loaded module. If the function fails, the return value is NULL/IntPtr.Zero</returns>
         [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
         internal static extern IntPtr LoadLibraryEx(string fileName, IntPtr hFile, int dwFlags);
+
+        /// <summary>
+        /// Determines the location of a resource with the specified type and name in the specified module using the default language
+        /// Reference: https://msdn.microsoft.com/en-us/library/windows/desktop/ms648042(v=vs.85).aspx
+        /// </summary>
+        /// <param name="hModule">A handle to the module whose portable executable file or an accompanying MUI file contains the resource. If this parameter is NULL, the function searches the module used to create the current process.</param>
+        /// <param name="lpID">The name of the resource. Alternately, rather than a pointer, this parameter can be MAKEINTRESOURCE(ID), where ID is the integer identifier of the resource. For more information, see the Remarks section below.</param>
+        /// <param name="lpType">The resource type. Alternately, rather than a pointer, this parameter can be MAKEINTRESOURCE(ID), where ID is the integer identifier of the given resource type.</param>
+        /// <returns>If the function succeeds, the return value is a handle to the specified resource's information block.</returns>
+        [DllImport("kernel32.dll", SetLastError = true)]
+        internal static extern IntPtr FindResource(IntPtr hModule, UInt32 lpID, UInt32 lpType);
 
         /// <summary>
         /// Determines the location of a resource with the specified type and name in the specified module.
@@ -59,9 +70,12 @@ namespace ReadLibraryMessageTable
         /// <param name="hModule">A handle to the module whose portable executable file or an accompanying MUI file contains the resource. If this parameter is NULL, the function searches the module used to create the current process.</param>
         /// <param name="lpID">The name of the resource. Alternately, rather than a pointer, this parameter can be MAKEINTRESOURCE(ID), where ID is the integer identifier of the resource. For more information, see the Remarks section below.</param>
         /// <param name="lpType">The resource type. Alternately, rather than a pointer, this parameter can be MAKEINTRESOURCE(ID), where ID is the integer identifier of the given resource type.</param>
-        /// <returns></returns>
+        /// <param name="wLanguage">The language of the resource.</param>
+        /// <returns>If the function succeeds, the return value is a handle to the specified resource's information block.</returns>
         [DllImport("kernel32.dll", SetLastError = true)]
-        internal static extern IntPtr FindResource(IntPtr hModule, int lpID, int lpType);
+        internal static extern IntPtr FindResourceEx(IntPtr hModule, UInt32 lpID, UInt32 lpType, UInt16 wLanguage
+);
+
 
         /// <summary>
         /// Retrieves a handle that can be used to obtain a pointer to the first byte of the specified resource in memory.

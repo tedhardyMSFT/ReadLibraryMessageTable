@@ -51,7 +51,7 @@ namespace RlmtTest
         public void TestModuleLoading()
         {
             ReadMessageTable msgTbl = new ReadMessageTable(@"C:\Windows\system32\msobjs.dll");
-            string timePriv = msgTbl.ReadmoduleMessage(1612);
+            string timePriv = msgTbl.ReadModuleMessage(1612);
             msgTbl.Dispose();
             Assert.AreEqual<string>(timePriv, SetSystemTimeExpected);
         }

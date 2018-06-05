@@ -13,13 +13,16 @@ namespace RlmtTestShell
         {
             Dictionary<string, string> Messages = null;
 
-            System.Threading.Thread.Sleep(1000);
+            //System.Threading.Thread.Sleep(1000);
 
-            Messages = ReadMessageTable.EnumerateMessageTable(@"C:\Windows\System32\msobjs.dll");
+            /// zune has multiple languages
+            Messages = ReadMessageTable.EnumerateMessageTable(@"C:\Program Files\Zune\ZuneResources.dll");
             //Messages = ReadMessageTable.EnumerateMessageTable(@"C:\Windows\System32\notepad.exe");
-            string Message = ReadMessageTable.ReadModuleSingleMessage(@"C:\Windows\system32\msobjs.dll", 9999);
+            string Message = ReadMessageTable.ReadModuleSingleMessage(@"C:\Program Files\Zune\ZuneResources.dll", 3405643777);
+            // decimal representation of hex country code (https://winprotocoldoc.blob.core.windows.net/productionwindowsarchives/MS-LCID/[MS-LCID].pdf) 
+            Message = ReadMessageTable.ReadModuleSingleMessage(@"C:\Program Files\Zune\ZuneResources.dll", 3222087522, 1028);
 
-            Console.WriteLine(Message);
+            Console.WriteLine(Messages.Keys.Count.ToString());
 
         }
     }
