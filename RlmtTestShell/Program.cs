@@ -17,8 +17,17 @@ namespace RlmtTestShell
 
             /// zune has multiple languages
             Messages = ReadMessageTable.EnumerateMessageTable(@"C:\Program Files\Zune\ZuneResources.dll");
-            //Messages = ReadMessageTable.EnumerateMessageTable(@"C:\Windows\System32\notepad.exe");
+            try
+            {
+                Messages = ReadMessageTable.EnumerateMessageTable(@"C:\Windows\System32\notepad.exe");
+            } catch (ReadLibraryMessageTable.ReadLibraryException rle)
+            {
+                Console.WriteLine("exception caught. Message:{0}", rle.ToString());
+            }
+            
             string Message = ReadMessageTable.ReadModuleSingleMessage(@"C:\Program Files\Zune\ZuneResources.dll", 3405643777);
+            //856326
+            Message = ReadMessageTable.ReadModuleSingleMessage(@"C:\Program Files\Zune\ZuneResources.dll", 856326, 3082);
             // decimal representation of hex country code (https://winprotocoldoc.blob.core.windows.net/productionwindowsarchives/MS-LCID/[MS-LCID].pdf) 
             Message = ReadMessageTable.ReadModuleSingleMessage(@"C:\Program Files\Zune\ZuneResources.dll", 3222087522, 1028);
 
