@@ -10,20 +10,20 @@ namespace RlmtTest
     {
         private string SetSystemTimeExpected = "Set System Time Privilege\r\n";
         [TestMethod]
-        public void ReadSetSystemTimePrivilegeMessage()
+        public void TestReadSinglemessage_SetSystemTimePrivilegeMessage()
         {
             
-            string Message = ReadSinglemessage(@"C:\Windows\system32\msobjs.dll", 1612);
+            string Message = this.readSinglemessage(@"C:\Windows\system32\msobjs.dll", 1612);
             Assert.AreEqual<string>(SetSystemTimeExpected, Message);
         }
 
         [TestMethod]
-        public void ReadMsgobjsMessages()
+        public void TestReadAllLibraryMessages_msgobs()
         {
             Dictionary<string, string> messageTable = new Dictionary<string, string>();
             string LibraryPath = @"C:\Windows\system32\msobjs.dll";
 
-            messageTable = ReadAllLibraryMessages(LibraryPath);
+            messageTable = this.readAllLibraryMessages(LibraryPath);
             int messagesFound = messageTable.Keys.Count;
 
             Assert.IsTrue((messagesFound >= 974));
@@ -32,37 +32,38 @@ namespace RlmtTest
 
         [TestMethod]
         [ExpectedException(typeof(ReadLibraryException))]
-        public void ReadInvalidMessageTable()
+        public void TestReadAllLibraryMessages_FileNotExist()
         {
             Dictionary<string, string> messageTable = new Dictionary<string, string>();
             string LibraryPath = @"C:\Windows\system32\msobjs2.dll";
 
-            messageTable = ReadAllLibraryMessages(LibraryPath);
+            messageTable = this.readAllLibraryMessages(LibraryPath);
         }
 
         [TestMethod]
         [ExpectedException(typeof(ReadLibraryException))]
-        public void ReadInvalidMessage()
+        public void TestReadSinglemessage_InvalidMessageId()
         {
-            string Message = ReadSinglemessage(@"C:\Windows\system32\msobjs.dll", 9999);
+            string Message = this.readSinglemessage(@"C:\Windows\system32\msobjs.dll", 9999);
         }
 
         [TestMethod]
-        public void TestModuleLoading()
+        public void TestReadModuleMessage_SetSystemTimePrivilegeMessage()
         {
             ReadMessageTable msgTbl = new ReadMessageTable(@"C:\Windows\system32\msobjs.dll");
             string timePriv = msgTbl.ReadModuleMessage(1612);
             msgTbl.Dispose();
-            Assert.AreEqual<string>(timePriv, SetSystemTimeExpected);
+            Assert.AreEqual<string>(SetSystemTimeExpected,timePriv);
         }
 
 
-        private string ReadSinglemessage(string libraryPath, uint messageId)
+
+        private string readSinglemessage(string libraryPath, uint messageId)
         {
             return ReadMessageTable.ReadModuleSingleMessage(libraryPath, messageId);
         }
 
-        private Dictionary<string,string>ReadAllLibraryMessages(string libraryPath)
+        private Dictionary<string,string> readAllLibraryMessages(string libraryPath)
         {
             return ReadMessageTable.EnumerateMessageTable(libraryPath);
         }
